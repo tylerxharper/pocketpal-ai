@@ -449,6 +449,8 @@ describe('WebSearchEngine', () => {
         {query: 'mars'},
         {signal: run.signal},
       );
+      // Allow the async user approval to resolve before starting the fake clock.
+      await Promise.resolve();
       jest.advanceTimersByTime(12000);
       const result = await pending;
       run.abort();
@@ -541,6 +543,7 @@ describe('WebSearchEngine', () => {
       const pending = new WebSearchEngine(tavilyAccess()).execute({
         query: 'mars',
       });
+      await Promise.resolve();
       await jest.advanceTimersByTimeAsync(1000);
       const result = await pending;
 
@@ -558,6 +561,7 @@ describe('WebSearchEngine', () => {
       const pending = new WebSearchEngine(tavilyAccess()).execute({
         query: 'mars',
       });
+      await Promise.resolve();
       await jest.advanceTimersByTimeAsync(1000);
 
       expect(await pending).toEqual(rateLimitError);
@@ -588,6 +592,7 @@ describe('WebSearchEngine', () => {
         {query: 'mars'},
         {signal: run.signal},
       );
+      await Promise.resolve();
       await jest.advanceTimersByTimeAsync(500);
       run.abort();
 
