@@ -1,0 +1,35 @@
+name: Web-tool security regression tests
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  targeted-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      RNLLAMA_SKIP_POSTINSTALL: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.21.0'
+          cache: yarn
+      - name: Install Yarn
+        run: npm install -g yarn@1.22.22
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Lint and check types
+        run: yarn lint && yarn typecheck
+      - name: Run targeted security and integration tests
+        run: >-
+          yarn test --runInBand --coverage=false --runTestsByPath
+          src/services/talents/__tests__/WebSearchEngine.test.ts
+          src/services/talents/__tests__/ReadUrlEngine.test.ts
+          src/services/talents/__tests__/readUrlScenarios.test.ts
+          src/services/agent/__tests__/AgentRunner.test.ts
+          src/utils/__tests__/chatExportImport.roundtrip.test.tsx
