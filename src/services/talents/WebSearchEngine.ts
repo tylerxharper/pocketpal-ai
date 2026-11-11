@@ -16,6 +16,7 @@ import {
 } from '../search/searchBudget';
 import {wrapUntrusted} from './untrustedContent';
 import {allowReadUrls} from './readUrlAllowlist';
+import {approveExternalRequest} from './approveExternalRequest';
 
 const PER_SNIPPET_CHARS = 280;
 
@@ -73,6 +74,18 @@ export class WebSearchEngine implements TalentEngine {
 
     const provider = this.access.getActiveProvider();
     const maxResults = this.access.getResultCount();
+
+    // Review before sending any model-generated search query off device.
+    // Do not rely on an LLM instruction as a security boundary.
+    const approved = await approveExternalRequest(
+      'Web search',
+      query,
+      provider.id,
+    );
+    if (!approved) {
+      const summary = 'web_search: blocked by user approval gate';
+      return {type: 'error', summary, errorMessage: summary};
+    }
 
     let hits: SearchHit[];
     try {
