@@ -83,11 +83,9 @@ export class WebSearchEngine implements TalentEngine {
     } else {
       // Review before any NEW model-generated query leaves the phone.
       // Never rely on an LLM instruction as the security boundary.
-      const approved = await approveExternalRequest(
-        'Web search',
-        query,
-        provider.id,
-      );
+      const decision = approveExternalRequest('Web search', query, provider.id);
+      const approved =
+        typeof decision === 'boolean' ? decision : await decision;
       if (!approved) {
         const summary = 'web_search: blocked by user approval gate';
         return {type: 'error', summary, errorMessage: summary};
