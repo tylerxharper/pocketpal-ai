@@ -14,6 +14,13 @@ import 'react-native-gesture-handler/jestSetup';
 (global as any).__E2E_SKIP_ONBOARDING__ = false;
 (global as any).__PLUS_STORE_GATE__ = true;
 
+// Unit tests must not open a native Alert. Real approval stays enabled in builds.
+// Make approval immediate so existing fake-timer and cancellation tests retain
+// their original timing, while targeted tests override it to verify blocking.
+jest.mock('../src/services/talents/approveExternalRequest', () => ({
+  approveExternalRequest: jest.fn(() => true),
+}));
+
 jest.mock('react-native-haptic-feedback');
 
 jest.mock('react-native-keyboard-controller', () => {
