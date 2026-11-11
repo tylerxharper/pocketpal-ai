@@ -14,7 +14,6 @@ jest.mock('../approveExternalRequest', () => ({
   approveExternalRequest: jest.fn().mockResolvedValue(true),
 }));
 
-
 const hit = (overrides: Partial<SearchHit> = {}): SearchHit => ({
   title: 'Title',
   url: 'https://example.com/a',
