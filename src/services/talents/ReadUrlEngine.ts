@@ -79,11 +79,13 @@ export class ReadUrlEngine implements TalentEngine {
     // Both provider-native readers and the default r.jina.ai reader send
     // a URL off device. Require an explicit review of the final target.
     const destination = provider.read ? provider.id : 'r.jina.ai';
-    const approved = await approveExternalRequest(
+    const decision = approveExternalRequest(
       'Read web page',
       targetUrl,
       destination,
     );
+    const approved =
+      typeof decision === 'boolean' ? decision : await decision;
     if (!approved) {
       const summary = 'read_url: blocked by user approval gate';
       return {type: 'error', summary, errorMessage: summary};
