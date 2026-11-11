@@ -19,7 +19,7 @@ import {
   resetReadUrlAllowlist,
 } from '../readUrlAllowlist';
 jest.mock('../approveExternalRequest', () => ({
-  approveExternalRequest: jest.fn().mockResolvedValue(true),
+  approveExternalRequest: jest.fn().mockReturnValue(true),
 }));
 
 const makeAccess = (overrides: Partial<SearchAccess> = {}): SearchAccess => {
