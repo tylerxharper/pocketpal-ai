@@ -58,6 +58,19 @@ describe('WebSearchEngine', () => {
     expect(search).not.toHaveBeenCalled();
   });
 
+  it('does not request approval or call the provider for an empty query', async () => {
+    const search = jest.fn();
+    const provider: SearchProvider = {id: 'tavily', search};
+    const access = makeAccess({getActiveProvider: () => provider});
+    jest.mocked(approveExternalRequest).mockClear();
+
+    const result = await new WebSearchEngine(access).execute({query: '   '});
+
+    expect(result.type).toBe('error');
+    expect(approveExternalRequest).not.toHaveBeenCalled();
+    expect(search).not.toHaveBeenCalled();
+  });
+
   it('exposes the web_search schema with a required query param', () => {
     const def = new WebSearchEngine(makeAccess()).toToolDefinition();
     expect(def.function.name).toBe('web_search');
