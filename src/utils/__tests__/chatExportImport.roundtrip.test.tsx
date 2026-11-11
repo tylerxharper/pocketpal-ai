@@ -1,4 +1,9 @@
 import * as React from 'react';
+
+// Exercise export/import with approved web tools; denial has dedicated tests.
+jest.mock('../../services/talents/approveExternalRequest', () => ({
+  approveExternalRequest: jest.fn().mockResolvedValue(true),
+}));
 import * as RNFS from '@dr.pogodin/react-native-fs';
 import {pick} from '@react-native-documents/picker';
 import {Q} from '@nozbe/watermelondb';
