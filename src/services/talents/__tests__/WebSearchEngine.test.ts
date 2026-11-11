@@ -3,9 +3,6 @@ import {abortableFetch} from '../../../../jest/abortableFetch';
 import {WebSearchEngine} from '../WebSearchEngine';
 import {approveExternalRequest} from '../approveExternalRequest';
 
-jest.mock('../approveExternalRequest', () => ({
-  approveExternalRequest: jest.fn().mockResolvedValue(true),
-}));
 import type {SearchAccess} from '../searchAccess';
 import type {SearchHit, SearchProvider} from '../../search/types';
 import * as budget from '../../search/searchBudget';
@@ -13,6 +10,10 @@ import {resetSearchCache} from '../../search/searchBudget';
 import {BraveProvider} from '../../search/providers/brave';
 import {TavilyProvider} from '../../search/providers/tavily';
 import * as readUrlAllowlist from '../readUrlAllowlist';
+jest.mock('../approveExternalRequest', () => ({
+  approveExternalRequest: jest.fn().mockResolvedValue(true),
+}));
+
 
 const hit = (overrides: Partial<SearchHit> = {}): SearchHit => ({
   title: 'Title',
