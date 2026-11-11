@@ -57,6 +57,21 @@ describe('WebSearchEngine', () => {
     expect(search).not.toHaveBeenCalled();
   });
 
+  it('uses cached public results without an outbound approval prompt', async () => {
+    const search = jest.fn();
+    const provider: SearchProvider = {id: 'tavily', search};
+    budget.setCachedHits('tavily', 'mars', 3, [hit()]);
+    jest.mocked(approveExternalRequest).mockClear();
+
+    const result = await new WebSearchEngine(
+      makeAccess({getActiveProvider: () => provider}),
+    ).execute({query: 'mars'});
+
+    expect(result.type).toBe('search');
+    expect(search).not.toHaveBeenCalled();
+    expect(approveExternalRequest).not.toHaveBeenCalled();
+  });
+
   it('does not request approval or call the provider for an empty query', async () => {
     const search = jest.fn();
     const provider: SearchProvider = {id: 'tavily', search};
