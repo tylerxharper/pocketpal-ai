@@ -1,5 +1,11 @@
 import {abortableFetch} from '../../../../jest/abortableFetch';
 
+// The preexisting agent tests exercise tool scheduling, not the native approval dialog.
+// Approval-denial behavior is covered in the WebSearchEngine/ReadUrlEngine tests.
+jest.mock('../../talents/approveExternalRequest', () => ({
+  approveExternalRequest: jest.fn().mockResolvedValue(true),
+}));
+
 import {runAgent} from '../AgentRunner';
 import type {AgentEvent} from '../AgentRunner.types';
 import type {
