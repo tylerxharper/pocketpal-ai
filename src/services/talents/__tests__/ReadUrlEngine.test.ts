@@ -6,6 +6,8 @@ import {
 } from '../../../../jest/urlImplementations';
 
 import {ReadUrlEngine} from '../ReadUrlEngine';
+import {approveExternalRequest} from '../approveExternalRequest';
+
 import type {SearchAccess} from '../searchAccess';
 import type {SearchProvider, PageContent} from '../../search/types';
 import * as budget from '../../search/searchBudget';
@@ -16,6 +18,9 @@ import {
   isReadUrlAllowed,
   resetReadUrlAllowlist,
 } from '../readUrlAllowlist';
+jest.mock('../approveExternalRequest', () => ({
+  approveExternalRequest: jest.fn().mockReturnValue(true),
+}));
 
 const makeAccess = (overrides: Partial<SearchAccess> = {}): SearchAccess => {
   const provider: SearchProvider = {
@@ -38,6 +43,47 @@ describe('ReadUrlEngine', () => {
     resetReadUrlAllowlist();
     // The URLs these tests read, as if returned by a prior web_search.
     allowReadUrls(['https://e.com', 'https://e.com/p', 'https://e.com/x']);
+  });
+
+  it('blocks a page read before contacting the reader when approval is denied', async () => {
+    const read = jest.fn();
+    const provider: SearchProvider = {id: 'exa', search: jest.fn(), read};
+    const access = makeAccess({getActiveProvider: () => provider});
+    jest.mocked(approveExternalRequest).mockResolvedValueOnce(false);
+
+    const result = await new ReadUrlEngine(access).execute({
+      url: 'https://e.com/p',
+    });
+
+    expect(approveExternalRequest).toHaveBeenCalledWith(
+      'Read web page',
+      'https://e.com/p',
+      'exa',
+    );
+    expect(result.type).toBe('error');
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it('never calls the fallback reader when the user blocks the URL', async () => {
+    const readWithDefaultReader = jest.fn();
+    const provider: SearchProvider = {id: 'brave', search: jest.fn()};
+    const access = makeAccess({
+      getActiveProvider: () => provider,
+      readWithDefaultReader,
+    });
+    jest.mocked(approveExternalRequest).mockResolvedValueOnce(false);
+
+    const result = await new ReadUrlEngine(access).execute({
+      url: 'https://e.com/x',
+    });
+
+    expect(approveExternalRequest).toHaveBeenCalledWith(
+      'Read web page',
+      'https://e.com/x',
+      'r.jina.ai',
+    );
+    expect(result.type).toBe('error');
+    expect(readWithDefaultReader).not.toHaveBeenCalled();
   });
 
   it('exposes the read_url schema with a required url param', () => {

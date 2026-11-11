@@ -29,6 +29,12 @@ import {
 } from '../../search/searchBudget';
 import type {SearchProvider} from '../../search/types';
 
+// The preexisting agent tests exercise tool scheduling, not the native approval dialog.
+// Approval-denial behavior is covered in the WebSearchEngine/ReadUrlEngine tests.
+jest.mock('../../talents/approveExternalRequest', () => ({
+  approveExternalRequest: jest.fn().mockResolvedValue(true),
+}));
+
 /**
  * Helper: build a CompletionEngine whose `completion()` invokes the
  * callback with each scripted token, then resolves with the supplied

@@ -32,6 +32,11 @@ import type {TalentEngine} from '../../services/talents/types';
 import type {CompletionEngine} from '../completionTypes';
 import type {AgentStep, MessageType} from '../types';
 
+// Exercise export/import with approved web tools; denial has dedicated tests.
+jest.mock('../../services/talents/approveExternalRequest', () => ({
+  approveExternalRequest: jest.fn().mockResolvedValue(true),
+}));
+
 type Row = Record<string, any>;
 
 const mockTables: Record<string, Row[]> = {

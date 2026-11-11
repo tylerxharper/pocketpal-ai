@@ -16,6 +16,7 @@ import {
 } from '../search/searchBudget';
 import {wrapUntrusted} from './untrustedContent';
 import {allowReadUrls} from './readUrlAllowlist';
+import {approveExternalRequest} from './approveExternalRequest';
 
 const PER_SNIPPET_CHARS = 280;
 
@@ -74,9 +75,25 @@ export class WebSearchEngine implements TalentEngine {
     const provider = this.access.getActiveProvider();
     const maxResults = this.access.getResultCount();
 
+    // Cached results require no outbound network request. Process them
+    // synchronously so sibling read_url calls can use the existing allowlist.
+    const cached = getCachedHits(provider.id, query, maxResults);
+    if (cached) {
+      allowReadUrls(cached.map(h => h.url));
+    } else {
+      // Review before any NEW model-generated query leaves the phone.
+      // Never rely on an LLM instruction as the security boundary.
+      const decision = approveExternalRequest('Web search', query, provider.id);
+      const approved =
+        typeof decision === 'boolean' ? decision : await decision;
+      if (!approved) {
+        const summary = 'web_search: blocked by user approval gate';
+        return {type: 'error', summary, errorMessage: summary};
+      }
+    }
+
     let hits: SearchHit[];
     try {
-      const cached = getCachedHits(provider.id, query, maxResults);
       const key = cacheKey(provider.id, query, maxResults);
       const shared = inFlight.get(key);
       if (cached) {
@@ -112,9 +129,6 @@ export class WebSearchEngine implements TalentEngine {
     );
 
     if (budgeted.length === 0) {
-      if (__DEV__) {
-        console.log('[web_search]', {query, provider: provider.id, count: 0});
-      }
       // No usable hits — provider returned none, or budgeting rejected them all.
       // Don't cache: a transient/all-rejected empty must not lock out retries or
       // flip the same input between success and error on replay.
@@ -126,15 +140,6 @@ export class WebSearchEngine implements TalentEngine {
     // on replay, without retaining oversized provider snippets.
     setCachedHits(provider.id, query, maxResults, budgeted);
     allowReadUrls(budgeted.map(h => h.url));
-
-    if (__DEV__) {
-      console.log('[web_search]', {
-        query,
-        provider: provider.id,
-        count: budgeted.length,
-        results: budgeted.map(h => ({title: h.title, url: h.url})),
-      });
-    }
 
     return {
       type: 'search',

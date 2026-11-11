@@ -1,6 +1,8 @@
 import {abortableFetch} from '../../../../jest/abortableFetch';
 
 import {WebSearchEngine} from '../WebSearchEngine';
+import {approveExternalRequest} from '../approveExternalRequest';
+
 import type {SearchAccess} from '../searchAccess';
 import type {SearchHit, SearchProvider} from '../../search/types';
 import * as budget from '../../search/searchBudget';
@@ -8,6 +10,9 @@ import {resetSearchCache} from '../../search/searchBudget';
 import {BraveProvider} from '../../search/providers/brave';
 import {TavilyProvider} from '../../search/providers/tavily';
 import * as readUrlAllowlist from '../readUrlAllowlist';
+jest.mock('../approveExternalRequest', () => ({
+  approveExternalRequest: jest.fn().mockReturnValue(true),
+}));
 
 const hit = (overrides: Partial<SearchHit> = {}): SearchHit => ({
   title: 'Title',
@@ -32,6 +37,53 @@ const makeAccess = (overrides: Partial<SearchAccess> = {}): SearchAccess => {
 
 describe('WebSearchEngine', () => {
   beforeEach(() => resetSearchCache());
+
+  it('blocks a web query before contacting the provider when approval is denied', async () => {
+    const search = jest.fn().mockResolvedValue([hit()]);
+    const provider: SearchProvider = {id: 'tavily', search};
+    const access = makeAccess({getActiveProvider: () => provider});
+    jest.mocked(approveExternalRequest).mockResolvedValueOnce(false);
+
+    const result = await new WebSearchEngine(access).execute({
+      query: 'PROJECT SECRET annual budget',
+    });
+
+    expect(approveExternalRequest).toHaveBeenCalledWith(
+      'Web search',
+      'PROJECT SECRET annual budget',
+      'tavily',
+    );
+    expect(result.type).toBe('error');
+    expect(search).not.toHaveBeenCalled();
+  });
+
+  it('uses cached public results without an outbound approval prompt', async () => {
+    const search = jest.fn();
+    const provider: SearchProvider = {id: 'tavily', search};
+    budget.setCachedHits('tavily', 'mars', 3, [hit()]);
+    jest.mocked(approveExternalRequest).mockClear();
+
+    const result = await new WebSearchEngine(
+      makeAccess({getActiveProvider: () => provider}),
+    ).execute({query: 'mars'});
+
+    expect(result.type).toBe('search');
+    expect(search).not.toHaveBeenCalled();
+    expect(approveExternalRequest).not.toHaveBeenCalled();
+  });
+
+  it('does not request approval or call the provider for an empty query', async () => {
+    const search = jest.fn();
+    const provider: SearchProvider = {id: 'tavily', search};
+    const access = makeAccess({getActiveProvider: () => provider});
+    jest.mocked(approveExternalRequest).mockClear();
+
+    const result = await new WebSearchEngine(access).execute({query: '   '});
+
+    expect(result.type).toBe('error');
+    expect(approveExternalRequest).not.toHaveBeenCalled();
+    expect(search).not.toHaveBeenCalled();
+  });
 
   it('exposes the web_search schema with a required query param', () => {
     const def = new WebSearchEngine(makeAccess()).toToolDefinition();
@@ -412,6 +464,8 @@ describe('WebSearchEngine', () => {
         {query: 'mars'},
         {signal: run.signal},
       );
+      // Allow the async user approval to resolve before starting the fake clock.
+      await Promise.resolve();
       jest.advanceTimersByTime(12000);
       const result = await pending;
       run.abort();
@@ -504,6 +558,7 @@ describe('WebSearchEngine', () => {
       const pending = new WebSearchEngine(tavilyAccess()).execute({
         query: 'mars',
       });
+      await Promise.resolve();
       await jest.advanceTimersByTimeAsync(1000);
       const result = await pending;
 
@@ -521,6 +576,7 @@ describe('WebSearchEngine', () => {
       const pending = new WebSearchEngine(tavilyAccess()).execute({
         query: 'mars',
       });
+      await Promise.resolve();
       await jest.advanceTimersByTimeAsync(1000);
 
       expect(await pending).toEqual(rateLimitError);
@@ -551,6 +607,7 @@ describe('WebSearchEngine', () => {
         {query: 'mars'},
         {signal: run.signal},
       );
+      await Promise.resolve();
       await jest.advanceTimersByTimeAsync(500);
       run.abort();
 

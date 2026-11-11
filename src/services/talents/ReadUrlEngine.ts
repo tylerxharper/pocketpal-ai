@@ -10,6 +10,7 @@ import type {PageContent} from '../search/types';
 import {budgetPage} from '../search/searchBudget';
 import {wrapUntrusted} from './untrustedContent';
 import {allowReadUrls, extractUrls, matchReadUrl} from './readUrlAllowlist';
+import {approveExternalRequest} from './approveExternalRequest';
 
 /**
  * Reject non-http(s) schemes and embedded credentials so a malicious page
@@ -75,6 +76,20 @@ export class ReadUrlEngine implements TalentEngine {
 
     const provider = this.access.getActiveProvider();
 
+    // Both provider-native readers and the default r.jina.ai reader send
+    // a URL off device. Require an explicit review of the final target.
+    const destination = provider.read ? provider.id : 'r.jina.ai';
+    const decision = approveExternalRequest(
+      'Read web page',
+      targetUrl,
+      destination,
+    );
+    const approved = typeof decision === 'boolean' ? decision : await decision;
+    if (!approved) {
+      const summary = 'read_url: blocked by user approval gate';
+      return {type: 'error', summary, errorMessage: summary};
+    }
+
     let page: PageContent;
     try {
       page = provider.read
@@ -90,13 +105,6 @@ export class ReadUrlEngine implements TalentEngine {
     }
 
     const bounded = budgetPage(page, this.recommendedContextTokens);
-    if (__DEV__) {
-      console.log('[read_url]', {
-        url: targetUrl,
-        provider: provider.read ? provider.id : 'default-reader',
-        textLength: bounded.text.length,
-      });
-    }
     if (!bounded.text) {
       const summary = `read_url: no readable content at ${targetUrl}`;
       return {type: 'error', summary, errorMessage: summary};
