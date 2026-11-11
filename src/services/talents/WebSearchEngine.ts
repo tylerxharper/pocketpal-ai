@@ -75,21 +75,27 @@ export class WebSearchEngine implements TalentEngine {
     const provider = this.access.getActiveProvider();
     const maxResults = this.access.getResultCount();
 
-    // Review before sending any model-generated search query off device.
-    // Do not rely on an LLM instruction as a security boundary.
-    const approved = await approveExternalRequest(
-      'Web search',
-      query,
-      provider.id,
-    );
-    if (!approved) {
-      const summary = 'web_search: blocked by user approval gate';
-      return {type: 'error', summary, errorMessage: summary};
+    // Cached results require no outbound network request. Process them
+    // synchronously so sibling read_url calls can use the existing allowlist.
+    const cached = getCachedHits(provider.id, query, maxResults);
+    if (cached) {
+      allowReadUrls(cached.map(h => h.url));
+    } else {
+      // Review before any NEW model-generated query leaves the phone.
+      // Never rely on an LLM instruction as the security boundary.
+      const approved = await approveExternalRequest(
+        'Web search',
+        query,
+        provider.id,
+      );
+      if (!approved) {
+        const summary = 'web_search: blocked by user approval gate';
+        return {type: 'error', summary, errorMessage: summary};
+      }
     }
 
     let hits: SearchHit[];
     try {
-      const cached = getCachedHits(provider.id, query, maxResults);
       const key = cacheKey(provider.id, query, maxResults);
       const shared = inFlight.get(key);
       if (cached) {
