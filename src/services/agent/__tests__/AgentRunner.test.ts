@@ -1,11 +1,5 @@
 import {abortableFetch} from '../../../../jest/abortableFetch';
 
-// The preexisting agent tests exercise tool scheduling, not the native approval dialog.
-// Approval-denial behavior is covered in the WebSearchEngine/ReadUrlEngine tests.
-jest.mock('../../talents/approveExternalRequest', () => ({
-  approveExternalRequest: jest.fn().mockResolvedValue(true),
-}));
-
 import {runAgent} from '../AgentRunner';
 import type {AgentEvent} from '../AgentRunner.types';
 import type {
@@ -34,6 +28,12 @@ import {
   setCachedHits,
 } from '../../search/searchBudget';
 import type {SearchProvider} from '../../search/types';
+
+// The preexisting agent tests exercise tool scheduling, not the native approval dialog.
+// Approval-denial behavior is covered in the WebSearchEngine/ReadUrlEngine tests.
+jest.mock('../../talents/approveExternalRequest', () => ({
+  approveExternalRequest: jest.fn().mockResolvedValue(true),
+}));
 
 /**
  * Helper: build a CompletionEngine whose `completion()` invokes the
