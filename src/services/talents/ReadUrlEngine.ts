@@ -84,8 +84,7 @@ export class ReadUrlEngine implements TalentEngine {
       targetUrl,
       destination,
     );
-    const approved =
-      typeof decision === 'boolean' ? decision : await decision;
+    const approved = typeof decision === 'boolean' ? decision : await decision;
     if (!approved) {
       const summary = 'read_url: blocked by user approval gate';
       return {type: 'error', summary, errorMessage: summary};
