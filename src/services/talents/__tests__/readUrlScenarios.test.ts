@@ -5,6 +5,11 @@ import {
 } from '../../../../jest/urlImplementations';
 
 import {ReadUrlEngine} from '../ReadUrlEngine';
+
+// Test URL allowlist behavior independently of the user approval UI.
+jest.mock('../approveExternalRequest', () => ({
+  approveExternalRequest: jest.fn().mockResolvedValue(true),
+}));
 import type {SearchAccess} from '../searchAccess';
 import type {PageContent, SearchProvider} from '../../search/types';
 import {resetReadUrlAllowlist, seedReadUrlAllowlist} from '../readUrlAllowlist';
