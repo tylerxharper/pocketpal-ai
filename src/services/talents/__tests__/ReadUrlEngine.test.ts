@@ -8,9 +8,6 @@ import {
 import {ReadUrlEngine} from '../ReadUrlEngine';
 import {approveExternalRequest} from '../approveExternalRequest';
 
-jest.mock('../approveExternalRequest', () => ({
-  approveExternalRequest: jest.fn().mockResolvedValue(true),
-}));
 import type {SearchAccess} from '../searchAccess';
 import type {SearchProvider, PageContent} from '../../search/types';
 import * as budget from '../../search/searchBudget';
@@ -21,6 +18,10 @@ import {
   isReadUrlAllowed,
   resetReadUrlAllowlist,
 } from '../readUrlAllowlist';
+jest.mock('../approveExternalRequest', () => ({
+  approveExternalRequest: jest.fn().mockResolvedValue(true),
+}));
+
 
 const makeAccess = (overrides: Partial<SearchAccess> = {}): SearchAccess => {
   const provider: SearchProvider = {
