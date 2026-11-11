@@ -5,14 +5,14 @@ import {
 } from '../../../../jest/urlImplementations';
 
 import {ReadUrlEngine} from '../ReadUrlEngine';
+import type {SearchAccess} from '../searchAccess';
+import type {PageContent, SearchProvider} from '../../search/types';
+import {resetReadUrlAllowlist, seedReadUrlAllowlist} from '../readUrlAllowlist';
 
 // Test URL allowlist behavior independently of the user approval UI.
 jest.mock('../approveExternalRequest', () => ({
   approveExternalRequest: jest.fn().mockResolvedValue(true),
 }));
-import type {SearchAccess} from '../searchAccess';
-import type {PageContent, SearchProvider} from '../../search/types';
-import {resetReadUrlAllowlist, seedReadUrlAllowlist} from '../readUrlAllowlist';
 
 const CANONICAL = Symbol('canonical');
 const PAGE_HIT = 'https://src.test/page';
