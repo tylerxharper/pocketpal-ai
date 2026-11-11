@@ -22,7 +22,6 @@ jest.mock('../approveExternalRequest', () => ({
   approveExternalRequest: jest.fn().mockResolvedValue(true),
 }));
 
-
 const makeAccess = (overrides: Partial<SearchAccess> = {}): SearchAccess => {
   const provider: SearchProvider = {
     id: 'tavily',
