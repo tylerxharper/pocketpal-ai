@@ -13,7 +13,7 @@ export function approveExternalRequest(
   action: 'Web search' | 'Read web page',
   value: string,
   destination: string,
-): Promise<boolean> {
+): boolean | Promise<boolean> {
   // Refuse anything too long to review accurately in a native alert.
   if (!value || value.length > MAX_REVIEW_CHARS) {
     return Promise.resolve(false);
