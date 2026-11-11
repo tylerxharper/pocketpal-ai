@@ -125,9 +125,6 @@ export class WebSearchEngine implements TalentEngine {
     );
 
     if (budgeted.length === 0) {
-      if (__DEV__) {
-        console.log('[web_search]', {query, provider: provider.id, count: 0});
-      }
       // No usable hits — provider returned none, or budgeting rejected them all.
       // Don't cache: a transient/all-rejected empty must not lock out retries or
       // flip the same input between success and error on replay.
@@ -139,15 +136,6 @@ export class WebSearchEngine implements TalentEngine {
     // on replay, without retaining oversized provider snippets.
     setCachedHits(provider.id, query, maxResults, budgeted);
     allowReadUrls(budgeted.map(h => h.url));
-
-    if (__DEV__) {
-      console.log('[web_search]', {
-        query,
-        provider: provider.id,
-        count: budgeted.length,
-        results: budgeted.map(h => ({title: h.title, url: h.url})),
-      });
-    }
 
     return {
       type: 'search',
