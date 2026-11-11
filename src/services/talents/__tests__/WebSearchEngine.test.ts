@@ -1,6 +1,11 @@
 import {abortableFetch} from '../../../../jest/abortableFetch';
 
 import {WebSearchEngine} from '../WebSearchEngine';
+import {approveExternalRequest} from '../approveExternalRequest';
+
+jest.mock('../approveExternalRequest', () => ({
+  approveExternalRequest: jest.fn().mockResolvedValue(true),
+}));
 import type {SearchAccess} from '../searchAccess';
 import type {SearchHit, SearchProvider} from '../../search/types';
 import * as budget from '../../search/searchBudget';
@@ -32,6 +37,25 @@ const makeAccess = (overrides: Partial<SearchAccess> = {}): SearchAccess => {
 
 describe('WebSearchEngine', () => {
   beforeEach(() => resetSearchCache());
+
+  it('blocks a web query before contacting the provider when approval is denied', async () => {
+    const search = jest.fn().mockResolvedValue([hit()]);
+    const provider: SearchProvider = {id: 'tavily', search};
+    const access = makeAccess({getActiveProvider: () => provider});
+    jest.mocked(approveExternalRequest).mockResolvedValueOnce(false);
+
+    const result = await new WebSearchEngine(access).execute({
+      query: 'PROJECT SECRET annual budget',
+    });
+
+    expect(approveExternalRequest).toHaveBeenCalledWith(
+      'Web search',
+      'PROJECT SECRET annual budget',
+      'tavily',
+    );
+    expect(result.type).toBe('error');
+    expect(search).not.toHaveBeenCalled();
+  });
 
   it('exposes the web_search schema with a required query param', () => {
     const def = new WebSearchEngine(makeAccess()).toToolDefinition();
