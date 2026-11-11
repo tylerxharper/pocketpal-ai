@@ -65,6 +65,28 @@ describe('ReadUrlEngine', () => {
     expect(read).not.toHaveBeenCalled();
   });
 
+  it('never calls the fallback reader when the user blocks the URL', async () => {
+    const readWithDefaultReader = jest.fn();
+    const provider: SearchProvider = {id: 'brave', search: jest.fn()};
+    const access = makeAccess({
+      getActiveProvider: () => provider,
+      readWithDefaultReader,
+    });
+    jest.mocked(approveExternalRequest).mockResolvedValueOnce(false);
+
+    const result = await new ReadUrlEngine(access).execute({
+      url: 'https://e.com/x',
+    });
+
+    expect(approveExternalRequest).toHaveBeenCalledWith(
+      'Read web page',
+      'https://e.com/x',
+      'r.jina.ai',
+    );
+    expect(result.type).toBe('error');
+    expect(readWithDefaultReader).not.toHaveBeenCalled();
+  });
+
   it('exposes the read_url schema with a required url param', () => {
     const def = new ReadUrlEngine(makeAccess()).toToolDefinition();
     expect(def.function.name).toBe('read_url');
