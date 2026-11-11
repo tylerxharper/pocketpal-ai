@@ -104,13 +104,6 @@ export class ReadUrlEngine implements TalentEngine {
     }
 
     const bounded = budgetPage(page, this.recommendedContextTokens);
-    if (__DEV__) {
-      console.log('[read_url]', {
-        url: targetUrl,
-        provider: provider.read ? provider.id : 'default-reader',
-        textLength: bounded.text.length,
-      });
-    }
     if (!bounded.text) {
       const summary = `read_url: no readable content at ${targetUrl}`;
       return {type: 'error', summary, errorMessage: summary};
