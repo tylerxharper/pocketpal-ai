@@ -11,7 +11,7 @@ import {BraveProvider} from '../../search/providers/brave';
 import {TavilyProvider} from '../../search/providers/tavily';
 import * as readUrlAllowlist from '../readUrlAllowlist';
 jest.mock('../approveExternalRequest', () => ({
-  approveExternalRequest: jest.fn().mockResolvedValue(true),
+  approveExternalRequest: jest.fn().mockReturnValue(true),
 }));
 
 const hit = (overrides: Partial<SearchHit> = {}): SearchHit => ({
